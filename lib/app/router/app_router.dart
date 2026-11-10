@@ -1,9 +1,11 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:macos_ui/macos_ui.dart';
+import 'responsive_app_shell.dart';
 
 import '../../features/about/presentation/screens/about_screen.dart';
+import '../../features/chat/presentation/providers/chat_notifier.dart';
 import '../../features/chat/presentation/screens/chat_screen.dart';
 import '../../features/models/presentation/screens/model_management_screen.dart';
 import '../../features/settings/presentation/screens/settings_screen.dart';
@@ -63,7 +65,7 @@ final GoRouter appRouter = GoRouter(
   ],
 );
 
-class AppShell extends StatelessWidget {
+class AppShell extends ConsumerWidget {
   const AppShell({
     required this.child,
     required this.currentPath,
@@ -73,18 +75,12 @@ class AppShell extends StatelessWidget {
   final Widget child;
   final String currentPath;
 
-  int get _selectedIndex {
-    if (currentPath.startsWith('/settings')) return 1;
-    if (currentPath.startsWith('/models')) return 2;
-    if (currentPath.startsWith('/about')) return 3;
-    return 0;
-  }
-
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return CallbackShortcuts(
       bindings: <ShortcutActivator, VoidCallback>{
         const SingleActivator(LogicalKeyboardKey.keyN, meta: true): () {
+          ref.read(chatProvider.notifier).startNewChat();
           context.go('/chat');
         },
         const SingleActivator(LogicalKeyboardKey.comma, meta: true): () {
@@ -93,45 +89,8 @@ class AppShell extends StatelessWidget {
       },
       child: Focus(
         autofocus: true,
-        child: MacosWindow(
-          sidebar: Sidebar(
-            minWidth: 220,
-            builder: (context, scrollController) {
-              return SidebarItems(
-                currentIndex: _selectedIndex,
-                onChanged: (index) {
-                  switch (index) {
-                    case 0:
-                      context.go('/chat');
-                    case 1:
-                      context.go('/settings');
-                    case 2:
-                      context.go('/models');
-                    case 3:
-                      context.go('/about');
-                  }
-                },
-                items: const [
-                  SidebarItem(
-                    leading: MacosIcon(CupertinoIcons.chat_bubble_text),
-                    label: Text('Chat'),
-                  ),
-                  SidebarItem(
-                    leading: MacosIcon(CupertinoIcons.gear),
-                    label: Text('Settings'),
-                  ),
-                  SidebarItem(
-                    leading: MacosIcon(CupertinoIcons.cloud_download),
-                    label: Text('Models'),
-                  ),
-                  SidebarItem(
-                    leading: MacosIcon(CupertinoIcons.info),
-                    label: Text('About'),
-                  ),
-                ],
-              );
-            },
-          ),
+        child: ResponsiveAppShell(
+          currentPath: currentPath,
           child: child,
         ),
       ),
